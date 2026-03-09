@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+clashbot.log
+screenshot.png
+*.egg-info/
