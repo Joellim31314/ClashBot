@@ -17,13 +17,14 @@ SCREEN_WIDTH = 720
 SCREEN_HEIGHT = 1280
 
 # --- Card Slots (bottom of screen, 4 card hand) ---
-# Y coordinate for the center of card slots
-CARD_SLOT_Y = 1190
+# Y coordinate for the center of card slots.
+# Calibrated from debug_raw.png captured on 2026-03-09; 1050 was above the hand.
+CARD_SLOT_Y = 1150
 # X coordinates for each of the 4 card slots (left to right)
-CARD_SLOT_X = [120, 240, 360, 480]
+CARD_SLOT_X = [185, 310, 440, 565]
 # Next card (5th card, partially visible)
-NEXT_CARD_X = 600
-NEXT_CARD_Y = 1190
+NEXT_CARD_X = 85
+NEXT_CARD_Y = 1210
 
 # --- Arena Play Zones ---
 # Where cards can be placed (your side of the arena)
@@ -77,6 +78,8 @@ MENU_INDICATOR_POS = (360, 200)   # Center area with menu elements
 CAPTURE_INTERVAL = 0.5     # Seconds between screen captures in main loop
 ACTION_DELAY_MIN = 0.05    # Minimum delay between actions (seconds)
 ACTION_DELAY_MAX = 0.20    # Maximum delay between actions (seconds)
+CARD_SELECTION_DELAY_MIN = 0.25  # Delay after selecting a card before placing it
+CARD_SELECTION_DELAY_MAX = 0.40
 POST_GAME_WAIT = 3.0       # Seconds to wait after game ends
 ELIXIR_WAIT_THRESHOLD = 7  # Minimum elixir before playing a card (Phase 1)
 
