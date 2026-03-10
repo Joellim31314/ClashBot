@@ -55,8 +55,51 @@ class TestDetectState:
         img = make_solid_image((0, 0, 0))
         pixels = np.array(img)
         bx, by = config.BATTLE_INDICATOR_POS
-        pixels[by, bx] = [100, 100, 200]  # Within battle indicator range
+        pixels[by, bx] = [200, 40, 200]  # Within battle indicator range
         img = Image.fromarray(pixels)
 
         detector = GameStateDetector(MagicMock())
         assert detector.detect(img) == GameState.BATTLE
+
+    def test_detects_game_over_after_long_battle_session(self):
+        battle_img = make_solid_image((0, 0, 0))
+        battle_pixels = np.array(battle_img)
+        bx, by = config.BATTLE_INDICATOR_POS
+        battle_pixels[by, bx] = [200, 40, 200]
+        battle_img = Image.fromarray(battle_pixels)
+
+        menu_img = make_solid_image((0, 0, 0))
+        clock = MagicMock(side_effect=[100.0, 131.0])
+        detector = GameStateDetector(MagicMock(), clock=clock)
+
+        assert detector.detect(battle_img) == GameState.BATTLE
+        assert detector.detect(menu_img) == GameState.GAME_OVER
+
+    def test_returns_menu_when_battle_was_too_short(self):
+        battle_img = make_solid_image((0, 0, 0))
+        battle_pixels = np.array(battle_img)
+        bx, by = config.BATTLE_INDICATOR_POS
+        battle_pixels[by, bx] = [200, 40, 200]
+        battle_img = Image.fromarray(battle_pixels)
+
+        menu_img = make_solid_image((0, 0, 0))
+        clock = MagicMock(side_effect=[100.0, 110.0])
+        detector = GameStateDetector(MagicMock(), clock=clock)
+
+        assert detector.detect(battle_img) == GameState.BATTLE
+        assert detector.detect(menu_img) == GameState.MENU
+
+    def test_game_over_is_reported_once_before_returning_to_menu(self):
+        battle_img = make_solid_image((0, 0, 0))
+        battle_pixels = np.array(battle_img)
+        bx, by = config.BATTLE_INDICATOR_POS
+        battle_pixels[by, bx] = [200, 40, 200]
+        battle_img = Image.fromarray(battle_pixels)
+
+        menu_img = make_solid_image((0, 0, 0))
+        clock = MagicMock(side_effect=[100.0, 131.0, 132.0])
+        detector = GameStateDetector(MagicMock(), clock=clock)
+
+        assert detector.detect(battle_img) == GameState.BATTLE
+        assert detector.detect(menu_img) == GameState.GAME_OVER
+        assert detector.detect(menu_img) == GameState.MENU

@@ -47,6 +47,7 @@ def game_loop(screen, executor, detector, strategy):
 
         if state == GameState.BATTLE:
             elixir = detector.get_elixir_count(image)
+            logger.info("Elixir: %d", elixir)
             action = strategy.decide(elixir)
             if action:
                 executor.play_card(action.slot, action.x, action.y)
@@ -61,6 +62,19 @@ def game_loop(screen, executor, detector, strategy):
             logger.info("Game over — waiting and dismissing.")
             time.sleep(config.POST_GAME_WAIT)
             executor.tap(*config.OK_BUTTON)
+
+        elif state == GameState.CHEST:
+            logger.info("Chest popup — tapping to dismiss.")
+            for _ in range(config.CHEST_TAP_COUNT):
+                executor.tap(*config.CHEST_TAP_POS)
+                time.sleep(0.4)
+
+        elif state == GameState.TROPHY_ROAD:
+            logger.info("Trophy road — pressing OK.")
+            executor.tap(*config.TROPHY_ROAD_OK_BUTTON)
+
+        elif state == GameState.UNKNOWN:
+            logger.debug("Unknown state — no indicator matched. Waiting...")
 
         time.sleep(config.CAPTURE_INTERVAL)
 

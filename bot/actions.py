@@ -37,6 +37,13 @@ class ActionExecutor:
         delay = random.uniform(config.ACTION_DELAY_MIN, config.ACTION_DELAY_MAX)
         time.sleep(delay)
 
+    def _card_selection_delay(self):
+        delay = random.uniform(
+            config.CARD_SELECTION_DELAY_MIN,
+            config.CARD_SELECTION_DELAY_MAX,
+        )
+        time.sleep(delay)
+
     def tap(self, x: int, y: int):
         self._ensure_connected()
         self._device.shell(f"input tap {x} {y}")
@@ -55,6 +62,7 @@ class ActionExecutor:
         card_x = config.CARD_SLOT_X[slot]
         card_y = config.CARD_SLOT_Y
         self._device.shell(f"input tap {card_x} {card_y}")
-        self._random_delay()
+        logger.debug("Selecting card slot %d at (%d, %d)", slot, card_x, card_y)
+        self._card_selection_delay()
         self._device.shell(f"input tap {x} {y}")
         logger.info("Played card slot %d -> (%d, %d)", slot, x, y)
