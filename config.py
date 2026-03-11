@@ -86,11 +86,11 @@ CHEST_INDICATOR_POS = (360, 100)               # Upper area — deep blue backgr
 CHEST_INDICATOR_COLOR_MIN = (0, 15, 80)          # Deep dark blue lower bound
 CHEST_INDICATOR_COLOR_MAX = (40, 80, 170)          # Deep dark blue upper bound
 
-# TROPHY_ROAD: Trophy road progress screen — green grass rows.
+# TROPHY_ROAD: Trophy road progress screen — left side bar background near bottom.
 # CALIBRATE: capture a screenshot on the trophy road and sample this pixel.
-TROPHY_ROAD_INDICATOR_POS = (360, 600)         # Center area — green grass tile
-TROPHY_ROAD_INDICATOR_COLOR_MIN = (50, 130, 20)   # Grass green lower bound
-TROPHY_ROAD_INDICATOR_COLOR_MAX = (140, 220, 80)   # Grass green upper bound
+TROPHY_ROAD_INDICATOR_POS = (130, 1240)        # Left side bottom bar background
+TROPHY_ROAD_INDICATOR_COLOR_MIN = (20, 60, 100)   # Dark blue lower bound
+TROPHY_ROAD_INDICATOR_COLOR_MAX = (80, 130, 180)   # Dark blue upper bound
 
 # GAME_OVER: OK/Continue button on the post-game results screen
 # CALIBRATE: run with DEBUG_STATE_PIXELS=True, end a match, and note the pixel color.
