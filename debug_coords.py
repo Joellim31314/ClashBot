@@ -4,7 +4,9 @@ Coordinate Debug & Calibration Tool for ClashBot.
 Captures a live screenshot from the emulator and tests ALL configured
 coordinates against it. Produces a text report and an annotated overlay image.
 
-Usage: Run during a LIVE BATTLE (cards visible on screen):
+Works on ANY screen (menu, battle, chest, trophy road, game over).
+
+Usage:
     python debug_coords.py
 """
 import sys
@@ -100,20 +102,49 @@ def test_elixir_bar(pixels: np.ndarray) -> list[dict]:
     return results
 
 
-def test_battle_indicator(pixels: np.ndarray) -> list[dict]:
-    """Test the battle detection pixel."""
-    bx, by = config.BATTLE_INDICATOR_POS
-    if by >= pixels.shape[0] or bx >= pixels.shape[1]:
-        return [{"name": "Battle Indicator", "x": bx, "y": by,
-                 "status": "FAIL", "reason": "Out of bounds"}]
-    pixel = tuple(pixels[by, bx])
-    is_battle = pixel_in_range(pixel, config.BATTLE_INDICATOR_COLOR_MIN, config.BATTLE_INDICATOR_COLOR_MAX)
-    return [{
-        "name": "Battle Indicator", "x": bx, "y": by,
-        "pixel": pixel,
-        "status": "PASS" if is_battle else "FAIL",
-        "reason": f"{rgb_str(pixel)} — {'matches battle range' if is_battle else 'does NOT match battle color range'}"
-    }]
+def test_state_indicators(pixels: np.ndarray) -> list[dict]:
+    """Test ALL state indicator pixels and report which ones match."""
+    indicators = [
+        ("Battle Indicator",     config.BATTLE_INDICATOR_POS,
+         config.BATTLE_INDICATOR_COLOR_MIN,    config.BATTLE_INDICATOR_COLOR_MAX),
+        ("Chest Indicator",      config.CHEST_INDICATOR_POS,
+         config.CHEST_INDICATOR_COLOR_MIN,      config.CHEST_INDICATOR_COLOR_MAX),
+        ("Trophy Road Indicator", config.TROPHY_ROAD_INDICATOR_POS,
+         config.TROPHY_ROAD_INDICATOR_COLOR_MIN, config.TROPHY_ROAD_INDICATOR_COLOR_MAX),
+        ("Game Over Indicator",  config.GAME_OVER_INDICATOR_POS,
+         config.GAME_OVER_INDICATOR_COLOR_MIN,  config.GAME_OVER_INDICATOR_COLOR_MAX),
+        ("Menu Indicator",       config.MENU_INDICATOR_POS,
+         config.MENU_INDICATOR_COLOR_MIN,        config.MENU_INDICATOR_COLOR_MAX),
+    ]
+    results = []
+    matched_states = []
+    for name, pos, lo, hi in indicators:
+        x, y = pos
+        if y >= pixels.shape[0] or x >= pixels.shape[1]:
+            results.append({"name": name, "x": x, "y": y,
+                            "status": "FAIL", "reason": "Out of bounds"})
+            continue
+        pixel = tuple(pixels[y, x])
+        matched = pixel_in_range(pixel, lo, hi)
+        if matched:
+            matched_states.append(name.replace(" Indicator", ""))
+        results.append({
+            "name": name, "x": x, "y": y,
+            "pixel": pixel,
+            "status": "MATCH" if matched else "NO",
+            "reason": f"{rgb_str(pixel)} — {'MATCHES range' if matched else 'does not match'}"
+                       f"  (range {lo} - {hi})"
+        })
+    # Summary line at the top
+    if matched_states:
+        summary = f"Detected state(s): {', '.join(matched_states)}"
+    else:
+        summary = "No state indicators matched — state would be UNKNOWN"
+    results.insert(0, {
+        "name": "Detection Summary", "x": None, "y": None,
+        "status": "INFO", "reason": summary
+    })
+    return results
 
 
 def test_bridges(pixels: np.ndarray) -> list[dict]:
@@ -159,12 +190,14 @@ def test_towers(pixels: np.ndarray) -> list[dict]:
 
 
 def test_buttons(pixels: np.ndarray) -> list[dict]:
-    """Test UI button positions (menu/post-game only)."""
+    """Test UI button positions (menu/post-game/chest/trophy screens)."""
     results = []
     buttons = [
         ("Battle Button", config.BATTLE_BUTTON),
         ("OK Button", config.OK_BUTTON),
         ("Menu Return Button", config.MENU_RETURN_BUTTON),
+        ("Trophy Road OK Button", config.TROPHY_ROAD_OK_BUTTON),
+        ("Chest Tap Position", config.CHEST_TAP_POS),
     ]
     for name, pos in buttons:
         x, y = pos
@@ -175,7 +208,7 @@ def test_buttons(pixels: np.ndarray) -> list[dict]:
         results.append({
             "name": name, "x": x, "y": y, "pixel": pixel,
             "status": "INFO",
-            "reason": f"{rgb_str(pixel)} — only valid on menu/post-game screen"
+            "reason": f"{rgb_str(pixel)}"
         })
     return results
 
@@ -185,7 +218,7 @@ def test_buttons(pixels: np.ndarray) -> list[dict]:
 COLORS = {
     "Card Slots": (255, 255, 0),      # Yellow
     "Elixir": (200, 0, 255),           # Purple
-    "Battle": (0, 200, 255),           # Cyan
+    "State Indicators": (0, 200, 255), # Cyan
     "Bridges": (0, 255, 0),            # Green
     "Towers": (255, 100, 0),           # Orange
     "Buttons": (255, 255, 255),        # White
@@ -220,9 +253,17 @@ def create_overlay(image: Image.Image) -> Image.Image:
         x = int(config.ELIXIR_BAR_X_START + pip_width * i + pip_width / 2)
         draw_crosshair(draw, x, config.ELIXIR_BAR_Y, color, size=6, label=str(i+1) if i % 3 == 0 else "")
 
-    # Battle indicator
-    bx, by = config.BATTLE_INDICATOR_POS
-    draw_crosshair(draw, bx, by, COLORS["Battle"], label="Battle")
+    # State indicators (all 5)
+    si_color = COLORS["State Indicators"]
+    state_indicators = [
+        ("Battle",     config.BATTLE_INDICATOR_POS),
+        ("Chest",      config.CHEST_INDICATOR_POS),
+        ("TrophyRd",   config.TROPHY_ROAD_INDICATOR_POS),
+        ("GameOver",   config.GAME_OVER_INDICATOR_POS),
+        ("Menu",       config.MENU_INDICATOR_POS),
+    ]
+    for name, pos in state_indicators:
+        draw_crosshair(draw, pos[0], pos[1], si_color, label=name)
 
     # Bridges
     color = COLORS["Bridges"]
@@ -244,7 +285,13 @@ def create_overlay(image: Image.Image) -> Image.Image:
 
     # Buttons
     color = COLORS["Buttons"]
-    for name, pos in [("Battle", config.BATTLE_BUTTON), ("OK", config.OK_BUTTON), ("MenuRet", config.MENU_RETURN_BUTTON)]:
+    for name, pos in [
+        ("Battle", config.BATTLE_BUTTON),
+        ("OK", config.OK_BUTTON),
+        ("MenuRet", config.MENU_RETURN_BUTTON),
+        ("TrOK", config.TROPHY_ROAD_OK_BUTTON),
+        ("ChestTap", config.CHEST_TAP_POS),
+    ]:
         draw_crosshair(draw, pos[0], pos[1], color, size=8, label=name)
 
     # Draw arena boundary box
@@ -353,9 +400,9 @@ def main():
 
     # Run all tests
     all_results = {
+        "State Indicators": test_state_indicators(pixels),
         "Card Slots": test_card_slots(pixels),
         "Elixir Bar": test_elixir_bar(pixels),
-        "Battle Indicator": test_battle_indicator(pixels),
         "Bridge Positions": test_bridges(pixels),
         "Tower Positions": test_towers(pixels),
         "UI Buttons": test_buttons(pixels),
