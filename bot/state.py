@@ -15,7 +15,6 @@ class GameState(Enum):
     MENU = "menu"
     BATTLE = "battle"
     GAME_OVER = "game_over"
-    CHEST = "chest"
     TROPHY_ROAD = "trophy_road"
 
 
@@ -46,16 +45,6 @@ class GameStateDetector:
             pixel,
             config.BATTLE_INDICATOR_COLOR_MIN,
             config.BATTLE_INDICATOR_COLOR_MAX,
-        )
-
-    def _is_chest_frame(self, pixels: np.ndarray) -> bool:
-        pixel = self._sample_pixel(pixels, config.CHEST_INDICATOR_POS)
-        if pixel is None:
-            return False
-        return self._pixel_in_range(
-            pixel,
-            config.CHEST_INDICATOR_COLOR_MIN,
-            config.CHEST_INDICATOR_COLOR_MAX,
         )
 
     def _is_trophy_road_frame(self, pixels: np.ndarray) -> bool:
@@ -94,7 +83,6 @@ class GameStateDetector:
         """Log the pixel values at every indicator position (for calibration)."""
         indicators = {
             "BATTLE":      config.BATTLE_INDICATOR_POS,
-            "CHEST":       config.CHEST_INDICATOR_POS,
             "TROPHY_ROAD": config.TROPHY_ROAD_INDICATOR_POS,
             "GAME_OVER":   config.GAME_OVER_INDICATOR_POS,
             "MENU":        config.MENU_INDICATOR_POS,
@@ -135,12 +123,9 @@ class GameStateDetector:
         if getattr(config, "DEBUG_STATE_PIXELS", False):
             self._log_all_indicator_pixels(pixels)
 
-        # Priority order: BATTLE > CHEST > TROPHY_ROAD > GAME_OVER > MENU > UNKNOWN
+        # Priority order: BATTLE > TROPHY_ROAD > GAME_OVER > MENU > UNKNOWN
         if self._is_battle_frame(pixels):
             return GameState.BATTLE
-
-        if self._is_chest_frame(pixels):
-            return GameState.CHEST
 
         if self._is_trophy_road_frame(pixels):
             return GameState.TROPHY_ROAD

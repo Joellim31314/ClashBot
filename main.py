@@ -63,18 +63,16 @@ def game_loop(screen, executor, detector, strategy):
             time.sleep(config.POST_GAME_WAIT)
             executor.tap(*config.OK_BUTTON)
 
-        elif state == GameState.CHEST:
-            logger.info("Chest popup — tapping to dismiss.")
-            for _ in range(config.CHEST_TAP_COUNT):
-                executor.tap(*config.CHEST_TAP_POS)
-                time.sleep(0.4)
-
         elif state == GameState.TROPHY_ROAD:
             logger.info("Trophy road — pressing OK.")
             executor.tap(*config.TROPHY_ROAD_OK_BUTTON)
+            time.sleep(2.0)  # Wait for transition back to menu
 
         elif state == GameState.UNKNOWN:
-            logger.debug("Unknown state — no indicator matched. Waiting...")
+            logger.info("Unknown state — assuming Chest or overlay. Tapping to dismiss.")
+            for _ in range(config.CHEST_TAP_COUNT):
+                executor.tap(*config.CHEST_TAP_POS)
+                time.sleep(0.2)
 
         time.sleep(config.CAPTURE_INTERVAL)
 

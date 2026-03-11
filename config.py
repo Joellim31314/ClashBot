@@ -64,11 +64,11 @@ OK_BUTTON = (360, 1180)          # Post-game OK/Continue button
 MENU_RETURN_BUTTON = (360, 1180) # Return to menu after game
 TROPHY_ROAD_OK_BUTTON = (360, 1240)  # OK button on the trophy road screen
 CHEST_TAP_POS = (360, 640)           # Center screen — tap to open/dismiss chest
-CHEST_TAP_COUNT = 5                  # Number of taps to fully dismiss chest popup
+CHEST_TAP_COUNT = 10                 # Number of taps to fully dismiss chest popup
 
 # --- Game State Detection ---
 # Each state is identified by a unique pixel indicator on screen.
-# Detection priority: BATTLE > CHEST > TROPHY_ROAD > GAME_OVER > MENU > UNKNOWN.
+# Detection priority: BATTLE > TROPHY_ROAD > GAME_OVER > MENU > UNKNOWN.
 # All color ranges must be calibrated for your emulator — see DEBUG_STATE_PIXELS.
 
 # Set to True to log pixel values at ALL indicator positions every frame.
@@ -79,12 +79,6 @@ DEBUG_STATE_PIXELS = True
 BATTLE_INDICATOR_POS = (160, 1260)
 BATTLE_INDICATOR_COLOR_MIN = (150, 0, 150)
 BATTLE_INDICATOR_COLOR_MAX = (255, 120, 255)
-
-# CHEST: Chest popup screen — deep blue background, unique to this overlay.
-# CALIBRATE: capture a screenshot during chest popup and sample this pixel.
-CHEST_INDICATOR_POS = (360, 100)               # Upper area — deep blue background
-CHEST_INDICATOR_COLOR_MIN = (0, 15, 80)          # Deep dark blue lower bound
-CHEST_INDICATOR_COLOR_MAX = (40, 80, 170)          # Deep dark blue upper bound
 
 # TROPHY_ROAD: Trophy road progress screen — left side bar background near bottom.
 # CALIBRATE: capture a screenshot on the trophy road and sample this pixel.

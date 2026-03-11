@@ -107,8 +107,6 @@ def test_state_indicators(pixels: np.ndarray) -> list[dict]:
     indicators = [
         ("Battle Indicator",     config.BATTLE_INDICATOR_POS,
          config.BATTLE_INDICATOR_COLOR_MIN,    config.BATTLE_INDICATOR_COLOR_MAX),
-        ("Chest Indicator",      config.CHEST_INDICATOR_POS,
-         config.CHEST_INDICATOR_COLOR_MIN,      config.CHEST_INDICATOR_COLOR_MAX),
         ("Trophy Road Indicator", config.TROPHY_ROAD_INDICATOR_POS,
          config.TROPHY_ROAD_INDICATOR_COLOR_MIN, config.TROPHY_ROAD_INDICATOR_COLOR_MAX),
         ("Game Over Indicator",  config.GAME_OVER_INDICATOR_POS,
@@ -253,11 +251,10 @@ def create_overlay(image: Image.Image) -> Image.Image:
         x = int(config.ELIXIR_BAR_X_START + pip_width * i + pip_width / 2)
         draw_crosshair(draw, x, config.ELIXIR_BAR_Y, color, size=6, label=str(i+1) if i % 3 == 0 else "")
 
-    # State indicators (all 5)
+    # State indicators (all 4)
     si_color = COLORS["State Indicators"]
     state_indicators = [
         ("Battle",     config.BATTLE_INDICATOR_POS),
-        ("Chest",      config.CHEST_INDICATOR_POS),
         ("TrophyRd",   config.TROPHY_ROAD_INDICATOR_POS),
         ("GameOver",   config.GAME_OVER_INDICATOR_POS),
         ("Menu",       config.MENU_INDICATOR_POS),
