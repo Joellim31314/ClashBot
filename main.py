@@ -20,12 +20,40 @@ logging.basicConfig(
 logger = logging.getLogger("clashbot")
 
 
+def _init_vision():
+    """Try to initialize YOLO detector and card matcher. Returns (detector, matcher) or (None, None)."""
+    yolo_detector = None
+    card_matcher = None
+
+    try:
+        from bot.vision import YOLODetector, CardMatcher
+        yolo_detector = YOLODetector()
+        if yolo_detector.is_loaded:
+            logger.info("YOLO detector enabled.")
+        else:
+            logger.info("YOLO detector disabled (model not found). Running in Phase 1 mode.")
+            yolo_detector = None
+
+        card_matcher = CardMatcher()
+        if card_matcher.is_loaded:
+            logger.info("Card matcher enabled (%d templates).", len(card_matcher._templates))
+        else:
+            logger.info("Card matcher disabled (no templates). Cards will be 'unknown'.")
+            card_matcher = None
+    except Exception:
+        logger.warning("Vision modules unavailable. Running in Phase 1 mode.", exc_info=True)
+
+    return yolo_detector, card_matcher
+
+
 def main():
     logger.info("ClashBot starting...")
 
     screen = ScreenCapture()
     executor = ActionExecutor()
-    detector = GameStateDetector(screen)
+
+    yolo_detector, card_matcher = _init_vision()
+    detector = GameStateDetector(screen, yolo_detector=yolo_detector, card_matcher=card_matcher)
     strategy = RandomStrategy()
 
     if not screen.is_connected():
@@ -46,13 +74,12 @@ def game_loop(screen, executor, detector, strategy):
         logger.info("State: %s", state.value)
 
         if state == GameState.BATTLE:
-            elixir = detector.get_elixir_count(image)
-            logger.info("Elixir: %d", elixir)
-            action = strategy.decide(elixir)
+            scene = detector.get_battle_scene(image)
+            action = strategy.decide(scene)
             if action:
                 executor.play_card(action.slot, action.x, action.y)
             else:
-                logger.debug("Waiting for elixir... (%d/%d)", elixir, config.ELIXIR_WAIT_THRESHOLD)
+                logger.debug("Waiting for elixir... (%d/%d)", scene.elixir, config.ELIXIR_WAIT_THRESHOLD)
 
         elif state == GameState.MENU:
             logger.info("In menu — clicking Battle button.")

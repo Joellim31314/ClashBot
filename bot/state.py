@@ -1,11 +1,13 @@
 """Pixel-based game state detection for ClashBot."""
 import logging
+import time
 from enum import Enum
 
 import numpy as np
 from PIL import Image
 
 import config
+from bot.models import BattleScene
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +23,10 @@ class GameState(Enum):
 class GameStateDetector:
     """Detects game state purely from pixel indicators — no timers."""
 
-    def __init__(self, screen_capture):
+    def __init__(self, screen_capture, yolo_detector=None, card_matcher=None):
         self._screen = screen_capture
+        self._yolo = yolo_detector
+        self._card_matcher = card_matcher
 
     @staticmethod
     def _pixel_in_range(pixel: tuple, color_min: tuple, color_max: tuple) -> bool:
@@ -137,6 +141,30 @@ class GameStateDetector:
             return GameState.MENU
 
         return GameState.UNKNOWN
+
+    def get_battle_scene(self, image: Image.Image) -> BattleScene:
+        """Build a full BattleScene from the current frame (YOLO + cards + elixir)."""
+        detections = []
+        if self._yolo and self._yolo.is_loaded:
+            detections = self._yolo.detect(image)
+
+        cards = []
+        if self._card_matcher and self._card_matcher.is_loaded:
+            cards = self._card_matcher.identify_hand(image)
+
+        elixir = self.get_elixir_count(image)
+
+        scene = BattleScene(
+            detections=detections,
+            cards_in_hand=cards,
+            elixir=elixir,
+            timestamp=time.time(),
+        )
+
+        card_names = [c.card_name for c in cards] if cards else []
+        logger.info("Scene: %d detections, cards=%s, elixir=%d",
+                     len(detections), card_names, elixir)
+        return scene
 
     def capture_and_detect(self) -> tuple[GameState, Image.Image]:
         image = self._screen.capture()

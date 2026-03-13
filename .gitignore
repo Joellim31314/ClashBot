@@ -6,3 +6,10 @@ clashbot.log
 screenshot.png
 *.egg-info/
 .worktrees/
+models/
+data/card_templates/
+data/yolo_dataset/
+data/screenshots/
+data/results/
+data/backgrounds/
+data/sprites/

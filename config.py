@@ -26,6 +26,13 @@ CARD_SLOT_X = [195, 350, 490, 645]
 NEXT_CARD_X = 82
 NEXT_CARD_Y = 1220
 
+# --- Card Template Matching ---
+CARD_CROP_WIDTH = 80    # Width of card crop region for template matching
+CARD_CROP_HEIGHT = 100  # Height of card crop region
+CARD_CROP_Y_OFFSET = -20  # Offset from card slot center to top of crop
+CARD_TEMPLATE_DIR = "data/card_templates"
+CARD_MATCH_THRESHOLD = 0.80  # Minimum confidence for template match
+
 # --- Arena Play Zones ---
 # Where cards can be placed (your side of the arena)
 ARENA_LEFT_X = 58
@@ -110,3 +117,8 @@ ELIXIR_WAIT_THRESHOLD = 7  # Minimum elixir before playing a card (Phase 1)
 # --- Logging ---
 LOG_LEVEL = "INFO"
 LOG_FILE = "clashbot.log"
+
+# --- YOLO Detection ---
+YOLO_MODEL_PATH = "models/arena_v1/weights/best.pt"  # Override if using KataCR weights
+YOLO_CONFIDENCE_THRESHOLD = 0.40
+YOLO_IOU_THRESHOLD = 0.45
