@@ -5,3 +5,4 @@ __pycache__/
 clashbot.log
 screenshot.png
 *.egg-info/
+.worktrees/
