@@ -39,23 +39,23 @@ CARD_MATCH_THRESHOLD = 0.80  # Minimum confidence for template match
 # ESTIMATED — verify with battle screenshot
 ARENA_LEFT_X = 87
 ARENA_RIGHT_X = 993
-ARENA_TOP_Y = 188       # Enemy side (top)
+ARENA_TOP_Y = 220       # Enemy side (top)
 ARENA_BRIDGE_Y = 994    # Bridge line (river)
 ARENA_MID_Y = 1313      # Center of your side
-ARENA_BOTTOM_Y = 1856   # Near your towers
+ARENA_BOTTOM_Y = 1656   # Near your towers
 
 # Bridge positions (common placement spots)
-LEFT_BRIDGE = (263, 1013)
-RIGHT_BRIDGE = (818, 1013)
+LEFT_BRIDGE = (243, 1013)
+RIGHT_BRIDGE = (838, 1013)
 
 # --- Tower Positions ---
 # ESTIMATED — verify with battle screenshot
-ENEMY_KING_TOWER = (540, 281)
-ENEMY_LEFT_PRINCESS = (270, 469)
-ENEMY_RIGHT_PRINCESS = (810, 469)
+ENEMY_KING_TOWER = (540, 230)
+ENEMY_LEFT_PRINCESS = (245, 469)
+ENEMY_RIGHT_PRINCESS = (840, 469)
 FRIENDLY_KING_TOWER = (540, 1650)
-FRIENDLY_LEFT_PRINCESS = (270, 1538)
-FRIENDLY_RIGHT_PRINCESS = (810, 1538)
+FRIENDLY_LEFT_PRINCESS = (245, 1438)
+FRIENDLY_RIGHT_PRINCESS = (840, 1438)
 
 # --- Elixir Bar ---
 # ESTIMATED — verify with battle screenshot
@@ -70,8 +70,8 @@ ELIXIR_FILLED_COLOR_MAX = (255, 130, 255)  # RGB upper bound
 # --- UI Buttons ---
 # ESTIMATED — these are on non-battle screens, verify each one
 BATTLE_BUTTON = (540, 1781)       # Main menu "Battle" button
-OK_BUTTON = (540, 2213)           # Post-game OK/Continue button
-MENU_RETURN_BUTTON = (540, 2213)  # Return to menu after game
+OK_BUTTON = (540, 2050)           # Post-game OK/Continue button
+MENU_RETURN_BUTTON = (540, 2050)  # Return to menu after game
 TROPHY_ROAD_OK_BUTTON = (540, 2325)  # OK button on the trophy road screen
 CHEST_TAP_POS = (540, 1200)           # Center screen — tap to open/dismiss chest
 CHEST_TAP_COUNT = 10                   # Number of taps to fully dismiss chest popup
@@ -99,7 +99,7 @@ TROPHY_ROAD_INDICATOR_COLOR_MAX = (80, 130, 180)   # Dark blue upper bound
 
 # GAME_OVER: OK/Continue button on the post-game results screen
 # CALIBRATE: run with DEBUG_STATE_PIXELS=True, end a match, and note the pixel color.
-GAME_OVER_INDICATOR_POS = (540, 2213)
+GAME_OVER_INDICATOR_POS = (540, 2000)
 GAME_OVER_INDICATOR_COLOR_MIN = (50, 130, 200)   # Blue-ish button lower bound
 GAME_OVER_INDICATOR_COLOR_MAX = (130, 210, 255)   # Blue-ish button upper bound
 
