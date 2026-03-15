@@ -50,9 +50,10 @@ class TestYOLODetector:
 
         with patch("bot.vision.Path") as mock_path:
             mock_path.return_value.exists.return_value = True
-            # Need to reimport to get the patched version
+            # Create detector with mock model via __new__ to skip __init__
             detector = YOLODetector.__new__(YOLODetector)
-            detector._model = mock_model
+            detector._models = [mock_model]
+            detector._filter_ui = False
 
         img = Image.new("RGB", (720, 1280))
         detections = detector.detect(img)
