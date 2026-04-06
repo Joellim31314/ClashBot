@@ -13,7 +13,7 @@ class TestScreenCaptureInit:
         mock_client = MagicMock()
         mock_client.devices.return_value = [MagicMock()]
         mock_adb_cls.return_value = mock_client
-        sc = ScreenCapture()
+        sc = ScreenCapture(use_dxcam=False)
         mock_adb_cls.assert_called_once_with(host=config.ADB_HOST, port=config.ADB_PORT)
 
     @patch("bot.screen.AdbClient")
@@ -21,14 +21,14 @@ class TestScreenCaptureInit:
         mock_client = MagicMock()
         mock_client.devices.return_value = [MagicMock()]
         mock_adb_cls.return_value = mock_client
-        assert ScreenCapture().is_connected() is True
+        assert ScreenCapture(use_dxcam=False).is_connected() is True
 
     @patch("bot.screen.AdbClient")
     def test_is_connected_false_when_no_devices(self, mock_adb_cls):
         mock_client = MagicMock()
         mock_client.devices.return_value = []
         mock_adb_cls.return_value = mock_client
-        assert ScreenCapture().is_connected() is False
+        assert ScreenCapture(use_dxcam=False).is_connected() is False
 
 
 class TestScreenCapture:
@@ -45,9 +45,9 @@ class TestScreenCapture:
         mock_client.devices.return_value = [mock_device]
         mock_adb_cls.return_value = mock_client
 
-        result = ScreenCapture().capture()
+        result = ScreenCapture(use_dxcam=False).capture()
         assert isinstance(result, Image.Image)
-        assert result.size == (720, 1280)
+        assert result.size == (config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
 
     @patch("bot.screen.AdbClient")
     def test_capture_raises_when_not_connected(self, mock_adb_cls):
@@ -55,4 +55,4 @@ class TestScreenCapture:
         mock_client.devices.return_value = []
         mock_adb_cls.return_value = mock_client
         with pytest.raises(ConnectionError):
-            ScreenCapture().capture()
+            ScreenCapture(use_dxcam=False).capture()

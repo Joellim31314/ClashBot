@@ -4,7 +4,7 @@ Shows a window with bounding boxes drawn on the live game.
 Press Q to quit, S to save a screenshot of the current frame.
 
 Usage:
-    python data/live_detection.py [--conf 0.35] [--scale 0.5]
+    python data/live_detection.py [--conf 0.35] [--scale 0]
 """
 import argparse
 import sys
@@ -210,11 +210,26 @@ def draw_frame(img: Image.Image, detections, arena_box, bridge_y_frac: float, sc
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--conf",  type=float, default=0.35, help="Confidence threshold")
-    parser.add_argument("--scale", type=float, default=0.4,  help="Display scale (0.4 = 40%% of original)")
+    parser.add_argument("--scale", type=float, default=0.0,  help="Display scale (0 = auto-fit to screen)")
     args = parser.parse_args()
 
     import config
     from bot.screen import ScreenCapture
+
+    if args.scale <= 0:
+        try:
+            import ctypes
+            user32 = ctypes.windll.user32
+            monitor_h = user32.GetSystemMetrics(1)
+            target_h = max(200, monitor_h - 100)
+            args.scale = min(target_h / config.SCREEN_HEIGHT, 1.0)
+        except Exception:
+            args.scale = 0.6
+        print(f"Auto-scale: {args.scale:.2f} "
+              f"(window: {int(config.SCREEN_WIDTH * args.scale)}x"
+              f"{int(config.SCREEN_HEIGHT * args.scale)})")
+    else:
+        args.scale = min(args.scale, 1.0)
 
     models = load_models()
 
@@ -229,6 +244,9 @@ def main():
     save_dir.mkdir(exist_ok=True)
 
     cv2.namedWindow("ClashBot Live Detection", cv2.WINDOW_NORMAL)
+    win_w = max(1, int(config.SCREEN_WIDTH * args.scale))
+    win_h = max(1, int(config.SCREEN_HEIGHT * args.scale))
+    cv2.resizeWindow("ClashBot Live Detection", win_w, win_h)
     bridge_y_frac = config.ARENA_BRIDGE_Y / config.SCREEN_HEIGHT
 
     frame_times = []
