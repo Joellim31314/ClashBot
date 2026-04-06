@@ -55,14 +55,18 @@ class TestYOLODetector:
             detector._models = [mock_model]
             detector._filter_ui = False
 
-        img = Image.new("RGB", (720, 1280))
+        # Use 1080x2400 to match config resolution; mock box coords are in
+        # the 576x896 crop space and get translated to full-screen coords.
+        img = Image.new("RGB", (1080, 2400))
         detections = detector.detect(img)
 
         assert len(detections) == 1
         assert detections[0].class_name == "knight"
         assert detections[0].confidence == 0.92
-        assert detections[0].bbox == (100, 200, 150, 280)
-        assert detections[0].center == (125, 240)
+        # Crop translation: ax1=22, ay1=168, ax2=1058, ay2=1824
+        # sx=1036/576≈1.799, sy=1656/896≈1.848
+        assert detections[0].bbox == (201, 537, 291, 685)
+        assert detections[0].center == (246, 611)
 
 
 class TestCardMatcher:

@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "vendor" / "KataCR"))
 
 import torch
+import torchvision
 _orig = torch.load
 def _patched(*a, **kw):
     kw.setdefault("weights_only", False)
@@ -23,12 +24,18 @@ torch.load = _patched
 
 import cv2
 import numpy as np
-from PIL import Image
+import matplotlib.pyplot as plt
+from PIL import Image, ImageDraw, ImageFont
 from ultralytics import YOLO
 
 # Arena crop for 1080x2400
 ARENA_CROP = (0.020, 0.070, 0.960, 0.690)
 YOLO_SIZE  = (576, 896)
+NMS_IOU_THRESHOLD = 0.6  # cross-detector NMS (matches KataCR ComboDetector)
+
+# Font for PIL rendering (bundled with KataCR vendor)
+FONT_PATH = str(Path(__file__).resolve().parent.parent / "vendor" / "KataCR"
+                / "katacr" / "utils" / "fonts" / "Consolas.ttf")
 
 UI_CLASSES = {
     "tower-bar", "bar", "bar-level", "elixir", "emote", "clock",
@@ -38,11 +45,67 @@ UI_CLASSES = {
 }
 TOWER_CLASSES = {"king-tower", "queen-tower", "cannoneer-tower", "dagger-duchess-tower"}
 
-# BGR colours for OpenCV
-COL_ENEMY    = (60,  60, 255)   # red
-COL_FRIENDLY = (60, 200,  60)   # green
-COL_TOWER    = (0,  200, 255)   # yellow
-COL_BRIDGE   = (255, 200,   0)  # cyan — bridge line
+COL_BRIDGE = (255, 200, 0)  # BGR — bridge line (drawn via cv2)
+
+# ---------------------------------------------------------------------------
+# Rendering utilities (ported from KataCR — can't import due to JAX dep)
+# ---------------------------------------------------------------------------
+
+_font_cache: dict[int, ImageFont.FreeTypeFont] = {}
+
+
+def _load_font(size: int) -> ImageFont.FreeTypeFont:
+    if size not in _font_cache:
+        try:
+            _font_cache[size] = ImageFont.truetype(FONT_PATH, size)
+        except OSError:
+            _font_cache[size] = ImageFont.load_default(size=size)
+    return _font_cache[size]
+
+
+def get_box_colors(n: int) -> list[tuple[int, int, int]]:
+    """Return *n* visually distinct RGB colours from matplotlib's BRG colourmap."""
+    cmap = plt.cm.brg
+    step = max(1, cmap.N // n)
+    colors = cmap([i for i in range(0, cmap.N, step)])
+    colors = (colors[:, :3] * 255).astype(int)
+    return [tuple(c) for c in colors]
+
+
+def build_label2colors(class_ids: np.ndarray) -> dict[int, tuple[int, int, int]]:
+    """Map unique class IDs → distinct RGB colours."""
+    if not len(class_ids):
+        return {}
+    labels = np.unique(class_ids).astype(np.int32)
+    colors = get_box_colors(len(labels))
+    return dict(zip(labels.tolist(), colors))
+
+
+def plot_box_PIL(
+    image: Image.Image,
+    box_xyxy: tuple[int, int, int, int],
+    text: str = "",
+    fontsize: int = 14,
+    box_color: tuple[int, int, int] = (255, 0, 0),
+    alpha: int = 150,
+) -> Image.Image:
+    """Draw a bounding box + label on an RGBA overlay image."""
+    draw = ImageDraw.Draw(image)
+    x1, y1, x2, y2 = int(box_xyxy[0]), int(box_xyxy[1]), int(box_xyxy[2]), int(box_xyxy[3])
+    rgba = tuple(box_color) + (alpha,)
+    draw.rectangle([x1, y1, x2, y2], outline=rgba, width=2)
+
+    font = _load_font(fontsize)
+    bbox = font.getbbox(text)
+    w_text, h_text = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    x_text = x1
+    y_text = y1 - h_text - 4 if y1 > h_text + 4 else y1
+    draw.rounded_rectangle(
+        [x_text, y_text, x_text + w_text + 4, y_text + h_text + 4],
+        radius=2, fill=rgba,
+    )
+    draw.text((x_text + 2, y_text + 1), text, fill=(255, 255, 255), font=font)
+    return image
 
 
 def load_models():
@@ -64,50 +127,80 @@ def run_detection(models, img: Image.Image, conf: float):
     sx = (ax2 - ax1) / YOLO_SIZE[0]
     sy = (ay2 - ay1) / YOLO_SIZE[1]
 
-    results = []
-    seen = []
+    # Collect raw boxes from both detectors
+    all_boxes: list[torch.Tensor] = []   # each [x1, y1, x2, y2, conf]  (crop space)
+    all_classes: list[str] = []
+
     for model in models:
-        for box in model.predict(source=arena, conf=conf, iou=0.45, verbose=False)[0].boxes:
-            cls = model.names[int(box.cls[0])]
-            if cls in UI_CLASSES:
+        result = model.predict(source=arena, conf=conf, iou=0.45, verbose=False)[0]
+        for box in result.boxes:
+            cls_name = model.names[int(box.cls[0])]
+            if cls_name in UI_CLASSES:
                 continue
-            bconf = float(box.conf[0])
-            cx1, cy1, cx2, cy2 = box.xyxy[0].tolist()
-            x1 = int(cx1 * sx) + ax1
-            y1 = int(cy1 * sy) + ay1
-            x2 = int(cx2 * sx) + ax1
-            y2 = int(cy2 * sy) + ay1
-            cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-            # deduplicate
-            if any(abs(cx - s[0]) < 30 and abs(cy - s[1]) < 30 for s in seen):
-                continue
-            seen.append((cx, cy))
-            side = "tower" if cls in TOWER_CLASSES else ("enemy" if cy < ih * 0.52 else "friendly")
-            results.append((cls, bconf, x1, y1, x2, y2, side))
+            xyxy = box.xyxy[0]                      # [x1, y1, x2, y2]
+            c = box.conf[0].unsqueeze(0)             # [conf]
+            all_boxes.append(torch.cat([xyxy, c]))   # [x1, y1, x2, y2, conf]
+            all_classes.append(cls_name)
+
+    if not all_boxes:
+        return [], (ax1, ay1, ax2, ay2)
+
+    preds = torch.stack(all_boxes)  # [N, 5]
+    # Cross-detector NMS (matches KataCR ComboDetector)
+    keep = torchvision.ops.nms(preds[:, :4], preds[:, 4], iou_threshold=NMS_IOU_THRESHOLD)
+    preds = preds[keep]
+    all_classes = [all_classes[i] for i in keep.tolist()]
+
+    # Translate to full-screen coordinates and classify side
+    results = []
+    for i, cls_name in enumerate(all_classes):
+        cx1, cy1, cx2, cy2, bconf = preds[i].tolist()
+        x1 = int(cx1 * sx) + ax1
+        y1 = int(cy1 * sy) + ay1
+        x2 = int(cx2 * sx) + ax1
+        y2 = int(cy2 * sy) + ay1
+        cy = (y1 + y2) // 2
+        side = "tower" if cls_name in TOWER_CLASSES else ("enemy" if cy < ih * 0.52 else "friendly")
+        results.append((cls_name, float(bconf), x1, y1, x2, y2, side))
+
     return results, (ax1, ay1, ax2, ay2)
 
 
 def draw_frame(img: Image.Image, detections, arena_box, bridge_y_frac: float, scale: float):
-    frame = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-    ih, iw = frame.shape[:2]
+    iw, ih = img.size
 
-    # Draw arena crop outline (grey)
+    # --- PIL RGBA overlay for detection annotations ---
+    if detections:
+        unique_classes = sorted(set(d[0] for d in detections))
+        cls_name_to_id = {name: i for i, name in enumerate(unique_classes)}
+        cls_ids = np.array([cls_name_to_id[d[0]] for d in detections])
+        label2color = build_label2colors(cls_ids)
+    else:
+        cls_name_to_id = {}
+        label2color = {}
+
+    base = img.convert("RGBA")
+    overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
+
+    side_tags = {"enemy": "E", "friendly": "F", "tower": "T"}
+    for cls_name, conf, x1, y1, x2, y2, side in detections:
+        cls_id = cls_name_to_id[cls_name]
+        color = label2color[cls_id]
+        label = f"{cls_name} {conf:.2f} [{side_tags[side]}]"
+        overlay = plot_box_PIL(overlay, (x1, y1, x2, y2), text=label,
+                               fontsize=14, box_color=color, alpha=150)
+
+    composited = Image.alpha_composite(base, overlay).convert("RGB")
+    frame = cv2.cvtColor(np.array(composited), cv2.COLOR_RGB2BGR)
+
+    # --- cv2 diagnostic overlays (fully opaque) ---
     ax1, ay1, ax2, ay2 = arena_box
     cv2.rectangle(frame, (ax1, ay1), (ax2, ay2), (80, 80, 80), 1)
 
-    # Draw bridge line
     by = int(bridge_y_frac * ih)
     cv2.line(frame, (0, by), (iw, by), COL_BRIDGE, 1)
-    cv2.putText(frame, "bridge", (5, by - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, COL_BRIDGE, 1)
-
-    for cls, conf, x1, y1, x2, y2, side in detections:
-        col = COL_TOWER if side == "tower" else (COL_ENEMY if side == "enemy" else COL_FRIENDLY)
-        cv2.rectangle(frame, (x1, y1), (x2, y2), col, 2)
-        label = f"{cls} {conf:.0%}"
-        (lw, lh), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)
-        cv2.rectangle(frame, (x1, y1 - lh - 6), (x1 + lw + 4, y1), col, -1)
-        cv2.putText(frame, label, (x1 + 2, y1 - 4),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 0), 1)
+    cv2.putText(frame, "bridge", (5, by - 5), cv2.FONT_HERSHEY_SIMPLEX,
+                0.5, COL_BRIDGE, 1, cv2.LINE_AA)
 
     if scale != 1.0:
         frame = cv2.resize(frame, (int(iw * scale), int(ih * scale)))

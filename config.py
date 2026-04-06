@@ -99,7 +99,7 @@ TROPHY_ROAD_INDICATOR_COLOR_MAX = (80, 130, 180)   # Dark blue upper bound
 
 # GAME_OVER: OK/Continue button on the post-game results screen
 # CALIBRATE: run with DEBUG_STATE_PIXELS=True, end a match, and note the pixel color.
-GAME_OVER_INDICATOR_POS = (540, 2000)
+GAME_OVER_INDICATOR_POS = (540, 200)
 GAME_OVER_INDICATOR_COLOR_MIN = (50, 130, 200)   # Blue-ish button lower bound
 GAME_OVER_INDICATOR_COLOR_MAX = (130, 210, 255)   # Blue-ish button upper bound
 
