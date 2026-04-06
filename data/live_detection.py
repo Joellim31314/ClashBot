@@ -9,6 +9,7 @@ Usage:
 import argparse
 import sys
 import time
+import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -24,18 +25,13 @@ torch.load = _patched
 
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 from ultralytics import YOLO
 
 # Arena crop for 1080x2400
 ARENA_CROP = (0.020, 0.070, 0.960, 0.690)
 YOLO_SIZE  = (576, 896)
 NMS_IOU_THRESHOLD = 0.6  # cross-detector NMS (matches KataCR ComboDetector)
-
-# Font for PIL rendering (bundled with KataCR vendor)
-FONT_PATH = str(Path(__file__).resolve().parent.parent / "vendor" / "KataCR"
-                / "katacr" / "utils" / "fonts" / "Consolas.ttf")
 
 UI_CLASSES = {
     "tower-bar", "bar", "bar-level", "elixir", "emote", "clock",
@@ -45,67 +41,26 @@ UI_CLASSES = {
 }
 TOWER_CLASSES = {"king-tower", "queen-tower", "cannoneer-tower", "dagger-duchess-tower"}
 
-COL_BRIDGE = (255, 200, 0)  # BGR — bridge line (drawn via cv2)
+COL_BRIDGE = (255, 200, 0)  # BGR bridge line (drawn via cv2)
 
-# ---------------------------------------------------------------------------
-# Rendering utilities (ported from KataCR — can't import due to JAX dep)
-# ---------------------------------------------------------------------------
-
-_font_cache: dict[int, ImageFont.FreeTypeFont] = {}
+_CLASS_COLOR_CACHE: dict[str, tuple[int, int, int]] = {}
 
 
-def _load_font(size: int) -> ImageFont.FreeTypeFont:
-    if size not in _font_cache:
-        try:
-            _font_cache[size] = ImageFont.truetype(FONT_PATH, size)
-        except OSError:
-            _font_cache[size] = ImageFont.load_default(size=size)
-    return _font_cache[size]
+def _class_color_bgr(class_name: str) -> tuple[int, int, int]:
+    """Stable class-to-colour mapping for cv2 overlays."""
+    cached = _CLASS_COLOR_CACHE.get(class_name)
+    if cached is not None:
+        return cached
 
-
-def get_box_colors(n: int) -> list[tuple[int, int, int]]:
-    """Return *n* visually distinct RGB colours from matplotlib's BRG colourmap."""
-    cmap = plt.cm.brg
-    step = max(1, cmap.N // n)
-    colors = cmap([i for i in range(0, cmap.N, step)])
-    colors = (colors[:, :3] * 255).astype(int)
-    return [tuple(c) for c in colors]
-
-
-def build_label2colors(class_ids: np.ndarray) -> dict[int, tuple[int, int, int]]:
-    """Map unique class IDs → distinct RGB colours."""
-    if not len(class_ids):
-        return {}
-    labels = np.unique(class_ids).astype(np.int32)
-    colors = get_box_colors(len(labels))
-    return dict(zip(labels.tolist(), colors))
-
-
-def plot_box_PIL(
-    image: Image.Image,
-    box_xyxy: tuple[int, int, int, int],
-    text: str = "",
-    fontsize: int = 14,
-    box_color: tuple[int, int, int] = (255, 0, 0),
-    alpha: int = 150,
-) -> Image.Image:
-    """Draw a bounding box + label on an RGBA overlay image."""
-    draw = ImageDraw.Draw(image)
-    x1, y1, x2, y2 = int(box_xyxy[0]), int(box_xyxy[1]), int(box_xyxy[2]), int(box_xyxy[3])
-    rgba = tuple(box_color) + (alpha,)
-    draw.rectangle([x1, y1, x2, y2], outline=rgba, width=2)
-
-    font = _load_font(fontsize)
-    bbox = font.getbbox(text)
-    w_text, h_text = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    x_text = x1
-    y_text = y1 - h_text - 4 if y1 > h_text + 4 else y1
-    draw.rounded_rectangle(
-        [x_text, y_text, x_text + w_text + 4, y_text + h_text + 4],
-        radius=2, fill=rgba,
-    )
-    draw.text((x_text + 2, y_text + 1), text, fill=(255, 255, 255), font=font)
-    return image
+    seed = zlib.crc32(class_name.encode("utf-8")) & 0xFFFFFFFF
+    hue = seed % 180
+    sat = 190 + ((seed >> 8) % 66)   # 190..255
+    val = 200 + ((seed >> 16) % 56)  # 200..255
+    hsv = np.uint8([[[hue, sat, val]]])
+    bgr = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[0, 0]
+    color = (int(bgr[0]), int(bgr[1]), int(bgr[2]))
+    _CLASS_COLOR_CACHE[class_name] = color
+    return color
 
 
 def load_models():
@@ -168,30 +123,31 @@ def run_detection(models, img: Image.Image, conf: float):
 
 def draw_frame(img: Image.Image, detections, arena_box, bridge_y_frac: float, scale: float):
     iw, ih = img.size
-
-    # --- PIL RGBA overlay for detection annotations ---
-    if detections:
-        unique_classes = sorted(set(d[0] for d in detections))
-        cls_name_to_id = {name: i for i, name in enumerate(unique_classes)}
-        cls_ids = np.array([cls_name_to_id[d[0]] for d in detections])
-        label2color = build_label2colors(cls_ids)
-    else:
-        cls_name_to_id = {}
-        label2color = {}
-
-    base = img.convert("RGBA")
-    overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    frame = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
     side_tags = {"enemy": "E", "friendly": "F", "tower": "T"}
     for cls_name, conf, x1, y1, x2, y2, side in detections:
-        cls_id = cls_name_to_id[cls_name]
-        color = label2color[cls_id]
-        label = f"{cls_name} {conf:.2f} [{side_tags[side]}]"
-        overlay = plot_box_PIL(overlay, (x1, y1, x2, y2), text=label,
-                               fontsize=14, box_color=color, alpha=150)
+        color = _class_color_bgr(cls_name)
+        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
 
-    composited = Image.alpha_composite(base, overlay).convert("RGB")
-    frame = cv2.cvtColor(np.array(composited), cv2.COLOR_RGB2BGR)
+        label = f"{cls_name} {conf:.2f} [{side_tags[side]}]"
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.45
+        thickness = 1
+        (tw, th), baseline = cv2.getTextSize(label, font, font_scale, thickness)
+
+        x_text = max(0, x1)
+        y_bottom = y1 - 4
+        if y_bottom - th - baseline - 4 < 0:
+            y_bottom = min(ih - 1, y1 + th + baseline + 4)
+
+        x_right = min(iw - 1, x_text + tw + 6)
+        y_top = max(0, y_bottom - th - baseline - 4)
+        cv2.rectangle(frame, (x_text, y_top), (x_right, y_bottom), color, -1)
+        cv2.putText(frame, label, (x_text + 3, y_bottom - baseline - 2),
+                    font, font_scale, (0, 0, 0), 2, cv2.LINE_AA)
+        cv2.putText(frame, label, (x_text + 3, y_bottom - baseline - 2),
+                    font, font_scale, (255, 255, 255), 1, cv2.LINE_AA)
 
     # --- cv2 diagnostic overlays (fully opaque) ---
     ax1, ay1, ax2, ay2 = arena_box
@@ -301,3 +257,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
