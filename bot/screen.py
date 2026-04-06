@@ -49,7 +49,7 @@ class ScreenCapture:
             return
 
         try:
-            self._dxcam = dxcam.create()
+            self._dxcam = dxcam.create(output_color="RGB")
             self._region = self._find_emulator_window()
             if self._region is None:
                 logger.warning("DXCam initialized but no LDPlayer window found; using ADB fallback")
@@ -137,7 +137,10 @@ class ScreenCapture:
         if frame is None:
             raise RuntimeError("DXCam returned no frame; ensure emulator window is visible")
 
-        image = Image.fromarray(frame[:, :, :3][:, :, ::-1], mode="RGB")
+        if frame.ndim == 3 and frame.shape[2] >= 3:
+            image = Image.fromarray(frame[:, :, :3], mode="RGB")
+        else:
+            image = Image.fromarray(frame).convert("RGB")
         image = self._normalize_image(image)
         logger.debug("DXCam frame: %s", image.size)
         return image
