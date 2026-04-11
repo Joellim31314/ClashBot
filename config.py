@@ -126,3 +126,27 @@ LOG_FILE = "clashbot.log"
 YOLO_MODEL_PATH = "models/arena_v1/weights/best.pt"  # Override if using KataCR weights
 YOLO_CONFIDENCE_THRESHOLD = 0.40
 YOLO_IOU_THRESHOLD = 0.45
+
+# --- Hog 2.6 Deck ---
+HOG_DECK = {
+    "hog-rider":  {"cost": 4, "role": "win_condition"},
+    "musketeer":  {"cost": 4, "role": "air_defense"},
+    "cannon":     {"cost": 3, "role": "building"},
+    "fireball":   {"cost": 4, "role": "spell_heavy"},
+    "the-log":    {"cost": 2, "role": "spell_light"},
+    "ice-golem":  {"cost": 2, "role": "mini_tank"},
+    "ice-spirit": {"cost": 1, "role": "cycle"},
+    "skeletons":  {"cost": 1, "role": "cycle"},
+}
+
+# Known air troops (for deciding when to play Musketeer)
+AIR_TROOPS = {
+    "minions", "mega-minion", "baby-dragon", "balloon",
+    "lava-hound", "inferno-dragon", "bats", "flying-machine",
+}
+
+# --- Hog 2.6 Placement Positions ---
+CANNON_PULL_CENTER = (540, 1313)      # Center pull position
+MUSKETEER_BEHIND_KING = (540, 1550)   # Behind king tower for range
+CYCLE_BACK_LEFT = (300, 1550)         # Safe cycle position (left)
+CYCLE_BACK_RIGHT = (780, 1550)        # Safe cycle position (right)
