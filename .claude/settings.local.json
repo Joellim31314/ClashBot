@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:universe.roboflow.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(cd \"C:/Users/Joel Lim/Desktop/ClashBot/.worktrees/phase2-yolo-vision\" && python -c \"import ast; ast.parse\\(open\\('data/generate_training_data.py'\\).read\\(\\)\\); ast.parse\\(open\\('data/train_yolo.py'\\).read\\(\\)\\); print\\('Both scripts syntax OK'\\)\")",
+      "Bash(cd \"C:/Users/Joel Lim/Desktop/ClashBot/.worktrees/phase2-yolo-vision\" && python -c \"from bot.models import Detection, CardInHand, BattleScene, Action; print\\('models OK'\\)\" && python -c \"from bot.strategy import RandomStrategy, Action; print\\('strategy import OK'\\)\" && python -c \"import ast; ast.parse\\(open\\('data/capture_templates.py'\\).read\\(\\)\\); ast.parse\\(open\\('data/test_pretrained.py'\\).read\\(\\)\\); print\\('scripts syntax OK'\\)\")",
+      "Bash(cd \"C:/Users/Joel Lim/Desktop/ClashBot/.worktrees/phase2-yolo-vision\" && python -c \"from bot.vision import YOLODetector, CardMatcher; print\\('vision imports OK'\\)\")",
+      "Bash(cd \"C:/Users/Joel Lim/Desktop/ClashBot/.worktrees/phase2-yolo-vision\" && python -c \"import ast; ast.parse\\(open\\('main.py'\\).read\\(\\)\\); ast.parse\\(open\\('bot/state.py'\\).read\\(\\)\\); ast.parse\\(open\\('bot/strategy.py'\\).read\\(\\)\\); print\\('All modified files syntax OK'\\)\")",
+      "Bash(cd \"C:/Users/Joel Lim/Desktop/ClashBot/.worktrees/phase2-yolo-vision\" && python -m pytest tests/ -v 2>&1)",
+      "Bash(curl -sL https://raw.githubusercontent.com/wty-yy/KataCR/master/katacr/constants/label_list.py)",
+      "Bash(curl -sL https://raw.githubusercontent.com/wty-yy/KataCR/master/katacr/build_dataset/constant.py)",
+      "Bash(cd \"C:/Users/Joel Lim/Desktop/ClashBot\" && python -c \"\nfrom ultralytics import YOLO\nprint\\('Testing detector1...'\\)\nm1 = YOLO\\('models/katacr/detector1_v0.7.13.pt'\\)\nprint\\(f'  detector1: {len\\(m1.names\\)} classes'\\)\nprint\\(f'  first 10: {list\\(m1.names.values\\(\\)\\)[:10]}'\\)\n\nprint\\('Testing detector2...'\\)\nm2 = YOLO\\('models/katacr/detector2_v0.7.13.pt'\\)\nprint\\(f'  detector2: {len\\(m2.names\\)} classes'\\)\nprint\\('Both models loaded OK!'\\)\n\" 2>&1)"
+    ]
+  }
+}

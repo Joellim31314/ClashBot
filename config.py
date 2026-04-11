@@ -70,7 +70,7 @@ ELIXIR_FILLED_COLOR_MAX = (255, 130, 255)  # RGB upper bound
 # --- UI Buttons ---
 # ESTIMATED — these are on non-battle screens, verify each one
 BATTLE_BUTTON = (540, 2050)       # Main menu "Battle" button
-OK_BUTTON = (540, 2050)           # Post-game OK/Continue button
+OK_BUTTON = (640, 1950)           # Post-game OK/Continue button
 MENU_RETURN_BUTTON = (540, 2050)  # Return to menu after game
 TROPHY_ROAD_OK_BUTTON = (540, 2325)  # OK button on the trophy road screen
 CHEST_TAP_POS = (540, 1200)           # Center screen — tap to open/dismiss chest
@@ -99,7 +99,7 @@ TROPHY_ROAD_INDICATOR_COLOR_MAX = (255, 230, 120)    # Dark blue upper bound
 
 # GAME_OVER: OK/Continue button on the post-game results screen
 # CALIBRATE: run with DEBUG_STATE_PIXELS=True, end a match, and note the pixel color.
-GAME_OVER_INDICATOR_POS = (540, 200)
+GAME_OVER_INDICATOR_POS = (640, 1950)
 GAME_OVER_INDICATOR_COLOR_MIN = (50, 130, 200)   # Blue-ish button lower bound
 GAME_OVER_INDICATOR_COLOR_MAX = (130, 210, 255)   # Blue-ish button upper bound
 
