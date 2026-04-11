@@ -31,7 +31,8 @@ def pixel_in_range(pixel: tuple, lo: tuple, hi: tuple) -> bool:
 
 
 def brightness(pixel: tuple) -> int:
-    return pixel[0] + pixel[1] + pixel[2]
+    # Cast to int first to avoid uint8 overflow (e.g. 238+209+128 wrapping to 63).
+    return int(pixel[0]) + int(pixel[1]) + int(pixel[2])
 
 
 # --- Coordinate tests ---

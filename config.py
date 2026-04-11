@@ -69,7 +69,7 @@ ELIXIR_FILLED_COLOR_MAX = (255, 130, 255)  # RGB upper bound
 
 # --- UI Buttons ---
 # ESTIMATED — these are on non-battle screens, verify each one
-BATTLE_BUTTON = (540, 1781)       # Main menu "Battle" button
+BATTLE_BUTTON = (540, 2050)       # Main menu "Battle" button
 OK_BUTTON = (540, 2050)           # Post-game OK/Continue button
 MENU_RETURN_BUTTON = (540, 2050)  # Return to menu after game
 TROPHY_ROAD_OK_BUTTON = (540, 2325)  # OK button on the trophy road screen
@@ -93,9 +93,9 @@ BATTLE_INDICATOR_COLOR_MAX = (255, 120, 255)
 
 # TROPHY_ROAD: Trophy road progress screen — left side bar background near bottom.
 # CALIBRATE: capture a screenshot on the trophy road and sample this pixel.
-TROPHY_ROAD_INDICATOR_POS = (195, 2325)
-TROPHY_ROAD_INDICATOR_COLOR_MIN = (20, 60, 100)   # Dark blue lower bound
-TROPHY_ROAD_INDICATOR_COLOR_MAX = (80, 130, 180)   # Dark blue upper bound
+TROPHY_ROAD_INDICATOR_POS = (88, 1210)
+TROPHY_ROAD_INDICATOR_COLOR_MIN = (170, 120, 0)   # Dark blue lower bound
+TROPHY_ROAD_INDICATOR_COLOR_MAX = (255, 230, 120)    # Dark blue upper bound
 
 # GAME_OVER: OK/Continue button on the post-game results screen
 # CALIBRATE: run with DEBUG_STATE_PIXELS=True, end a match, and note the pixel color.
@@ -105,9 +105,9 @@ GAME_OVER_INDICATOR_COLOR_MAX = (130, 210, 255)   # Blue-ish button upper bound
 
 # MENU: Battle button on the main menu screen
 # CALIBRATE: run with DEBUG_STATE_PIXELS=True on the main menu, and note the pixel color.
-MENU_INDICATOR_POS = (540, 1781)
+MENU_INDICATOR_POS = (540, 2050)
 MENU_INDICATOR_COLOR_MIN = (200, 150, 0)         # Golden button lower bound
-MENU_INDICATOR_COLOR_MAX = (255, 230, 100)         # Golden button upper bound
+MENU_INDICATOR_COLOR_MAX = (255, 235, 190)         # Golden button upper bound
 
 # --- Timing ---
 CAPTURE_INTERVAL = 0.1     # Seconds between screen captures in main loop (10 Hz)
