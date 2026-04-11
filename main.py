@@ -7,7 +7,7 @@ import config
 from bot.screen import ScreenCapture
 from bot.actions import ActionExecutor
 from bot.state import GameStateDetector, GameState
-from bot.strategy import RandomStrategy
+from bot.strategy import HogStrategy
 
 logging.basicConfig(
     level=getattr(logging, config.LOG_LEVEL),
@@ -54,7 +54,7 @@ def main():
 
     yolo_detector, card_matcher = _init_vision()
     detector = GameStateDetector(screen, yolo_detector=yolo_detector, card_matcher=card_matcher)
-    strategy = RandomStrategy()
+    strategy = HogStrategy()
 
     if not screen.is_connected():
         logger.error("Cannot connect to emulator. Is LDPlayer running with ADB enabled?")

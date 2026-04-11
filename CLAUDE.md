@@ -2,12 +2,14 @@
 
 ## What Is This Project?
 
-An automated Clash Royale bot that plays the game via an Android emulator (LDPlayer 9) controlled through ADB. Uses Computer Vision (YOLO) for perception and a layered decision engine (heuristics → imitation learning → RL) for strategy.
+An AI bot that learns to master the **Hog 2.6 deck** in Clash Royale via an Android emulator (LDPlayer 9) controlled through ADB. Uses Computer Vision (YOLO) for perception and a layered decision engine (heuristics → imitation learning → RL) for strategy.
+
+This is both an educational ML/AI project and a practical bot. The goal is to deeply learn one deck — not chase trophies.
 
 **Owner:** Joel Lim
 **Platform:** Windows 11, RTX 4050 laptop
 **Language:** Python 3.11+
-**Target:** 3k → 5k → 10k trophies (incremental)
+**Deck:** Hog 2.6 (Hog Rider, Musketeer, Cannon, Ice Spirit, Skeletons, Ice Golem, Fireball, The Log)
 
 ## Architecture
 
@@ -36,6 +38,7 @@ ClashBot/
 │   ├── strategy.py            # Decision engine (Phase 1 = random cards)
 │   └── vision.py              # YOLODetector + CardMatcher (Phase 2)
 ├── data/
+│   ├── live_detection.py      # Real-time YOLO detection overlay (Phase 2 testing)
 │   ├── test_pretrained.py     # Evaluate KataCR model on screenshots
 │   ├── capture_templates.py   # Capture card templates from emulator
 │   ├── generate_training_data.py  # Synthetic YOLO training data
@@ -66,11 +69,11 @@ ClashBot/
 | Phase | Focus | Status |
 |-------|-------|--------|
 | Phase 1 | Foundation — ADB pipeline, random bot | **Complete** |
-| **Phase 2** | YOLO vision — troop/card detection | **Current** (code done, testing model) |
-| Phase 3 | Heuristic bot — rules engine | Planned |
-| Phase 4 | Expanded vision — all game objects | Planned |
-| Phase 5 | Learning — imitation + RL | Planned |
-| Phase 6 | Optimization — advanced tactics | Planned |
+| **Phase 2** | Vision — YOLO detection + live validation | **Current** |
+| Phase 3 | Hog 2.6 Heuristics — rule-based strategy for Hog 2.6 deck | Planned |
+| Phase 4 | Replay Pipeline — YouTube → frame extraction → state-action pairs | Planned |
+| Phase 5 | Imitation Learning — behavior cloning from pro Hog 2.6 replays | Planned |
+| Phase 6 | Refinement — RL fine-tuning, advanced tactics | Planned |
 
 ## Coding Conventions
 
@@ -89,6 +92,23 @@ ClashBot/
 - Bot must handle menu navigation (click Battle, dismiss results) not just in-battle play
 - Human-like random delays between actions (50-200ms jitter) to reduce detection risk
 - Phase 1 bot will lose every game — that's expected. Pipeline correctness is the goal.
+- **Hog 2.6 only** — all strategy, training data, and evaluation is scoped to this single deck
+
+## Hog 2.6 Deck Reference
+
+| Card | Role | Elixir |
+|------|------|--------|
+| Hog Rider | Win condition — primary damage dealer | 4 |
+| Musketeer | Anti-air + ranged DPS defense | 4 |
+| Cannon | Building — pulls and defends ground troops | 3 |
+| Fireball | Spell — splash damage, finisher | 4 |
+| The Log | Spell — ground swarm clear, knockback | 2 |
+| Ice Golem | Mini-tank — kiting, distraction | 2 |
+| Ice Spirit | Cycle card — freeze + cheap cycle | 1 |
+| Skeletons | Cycle card — distraction + high DPS | 1 |
+
+**Average elixir cost:** 2.6 (very fast cycle)
+**Playstyle:** Defensive cycle deck. Defend efficiently, counter-push with Hog Rider. Outcycle opponents.
 
 ## Reference Documents
 

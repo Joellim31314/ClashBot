@@ -207,6 +207,8 @@ def main():
 
     frame_times = []
     save_count = 0
+    prev_classes: dict[str, str] = {}  # cls_name -> side (for change detection)
+    last_summary_time = 0.0
 
     while True:
         t0 = time.time()
@@ -239,6 +241,51 @@ def main():
                   f"troops: {n_troops}  towers: {n_towers}  |  conf>={args.conf:.0%}  |  Q=quit  S=save")
         cv2.putText(frame, status, (10, 24),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+
+        # --- Terminal logging: print when detections change ---
+        curr_classes: dict[str, str] = {}
+        for cls_name, conf, x1, y1, x2, y2, side in detections:
+            key_name = f"{cls_name}_{side}"
+            if key_name not in curr_classes or conf > float(curr_classes.get(f"{key_name}_conf", 0)):
+                curr_classes[key_name] = side
+                curr_classes[f"{key_name}_conf"] = str(conf)
+
+        # Build simple set of what's on screen
+        curr_set = {f"{cls_name}_{side}" for cls_name, _, _, _, _, _, side in detections}
+        prev_set = set(prev_classes.keys())
+
+        appeared = curr_set - prev_set
+        disappeared = prev_set - curr_set
+
+        now = time.time()
+        if appeared or disappeared:
+            for key_name in sorted(appeared):
+                parts = key_name.rsplit("_", 1)
+                cls, side = parts[0], parts[1]
+                matching = [(c, conf) for c, conf, *_, s in detections if c == cls and s == side]
+                if matching:
+                    conf_val = matching[0][1]
+                    print(f"  + {cls:<25} [{side:>8}]  conf={conf_val:.2f}")
+            for key_name in sorted(disappeared):
+                parts = key_name.rsplit("_", 1)
+                cls, side = parts[0], parts[1]
+                print(f"  - {cls:<25} [{side:>8}]  (gone)")
+
+        # Periodic full summary every 3 seconds
+        if now - last_summary_time >= 3.0 and detections:
+            last_summary_time = now
+            enemy = [(c, conf) for c, conf, *_, s in detections if s == "enemy"]
+            friendly = [(c, conf) for c, conf, *_, s in detections if s == "friendly"]
+            towers = [(c, conf) for c, conf, *_, s in detections if s == "tower"]
+            print(f"\n--- {time.strftime('%H:%M:%S')} | {len(detections)} detections | FPS: {fps:.1f} ---")
+            if enemy:
+                print(f"  Enemy:    {', '.join(f'{c}({conf:.0%})' for c, conf in enemy)}")
+            if friendly:
+                print(f"  Friendly: {', '.join(f'{c}({conf:.0%})' for c, conf in friendly)}")
+            if towers:
+                print(f"  Towers:   {', '.join(f'{c}({conf:.0%})' for c, conf in towers)}")
+
+        prev_classes = {k: v for k, v in curr_classes.items() if "_conf" not in k}
 
         cv2.imshow("ClashBot Live Detection", frame)
 
