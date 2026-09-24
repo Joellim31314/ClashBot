@@ -33,7 +33,7 @@ CARD_CROP_WIDTH = 120   # Width of card crop region for template matching
 CARD_CROP_HEIGHT = 188  # Height of card crop region
 CARD_CROP_Y_OFFSET = -38  # Offset from card slot center to top of crop
 CARD_TEMPLATE_DIR = "data/card_templates"
-CARD_MATCH_THRESHOLD = 0.80  # Minimum confidence for template match
+CARD_MATCH_THRESHOLD = 0.60  # Minimum confidence for template match (lower to handle greyed-out cards)
 
 # --- Arena Play Zones ---
 # ESTIMATED — verify with battle screenshot
