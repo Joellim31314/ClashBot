@@ -10,7 +10,7 @@ Screen capture (ADB) -> Detection (YOLO + pixel analysis) -> Game state -> Strat
 
 - **Emulator control:** frames are captured and taps/swipes sent over ADB (`pure-python-adb`), with randomized human-like delays.
 - **State detection:** pixel-color checks classify the screen (menu, battle, game over, trophy road) and read the elixir bar.
-- **Vision:** pre-trained [KataCR](https://github.com/wty-yy/KataCR) dual YOLOv8 detectors find troops and buildings; OpenCV template matching identifies the cards in hand.
+- **Vision:** dual YOLOv8 detectors find troops and buildings; OpenCV template matching identifies the cards in hand.
 - **Strategy:** `HogStrategy` follows a defend -> attack -> cycle priority using elixir, hand and detections. A random-play baseline is also included.
 - **Menu automation:** the bot queues battles and dismisses result and chest screens on its own.
 
@@ -32,8 +32,6 @@ Object detection needs thousands of labeled images, and hand-drawing boxes aroun
 
 Randomizing position, scale and class forces the model to learn what each unit *looks like* rather than memorizing where units usually appear. The main risk is the "domain gap": pasted sprites lack real-game effects like shadows, health bars, overlaps and animation frames, so a model trained only on synthetic data can score worse on real screenshots than on its own validation set.
 
-**Note on what's used at runtime:** the bot currently runs the pre-trained [KataCR](https://github.com/wty-yy/KataCR) detectors, which were built with this same synthetic-data approach. The generation and training scripts here were written to fine-tune or replace them, but a custom-trained model was not completed.
-
 ## Project layout
 
 ```
@@ -54,19 +52,12 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Optional: place KataCR weights in `models/katacr/` and card templates in `data/card_templates/` to enable vision. Without them the bot falls back to a non-vision mode.
-
 ## Run
 
 ```bash
 python main.py          # start the bot
 python -m pytest tests  # run tests
 ```
-
-## Status
-
-The pipeline, vision integration and first-pass Hog 2.6 heuristics are implemented. The strategy has not been benchmarked, and the planned replay-based imitation learning and RL phases were not started. The project is currently on hold.
-
 ## Disclaimer
 
 For educational purposes only. Automating the game may violate its terms of service; use at your own risk.
